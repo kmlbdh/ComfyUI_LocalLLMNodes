@@ -1,0 +1,5 @@
+# ComfyUI/custom_nodes/ComfyUI_LocalLLMNodes/requirements.txt
+transformers
+torch
+# bitsandbytes # Uncomment if you implement quantization
+# accelerate   # Often needed with transformers, especially for device_map

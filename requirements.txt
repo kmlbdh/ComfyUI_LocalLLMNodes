@@ -1,5 +1,24 @@
-# ComfyUI/custom_nodes/ComfyUI_LocalLLMNodes/requirements.txt
-transformers
-torch
-# bitsandbytes # Uncomment if you implement quantization
-# accelerate   # Often needed with transformers, especially for device_map
+# Core dependencies for Hugging Face transformers based nodes (e.g., Hermes-2-Pro-Llama-3-8B)
+transformers>=4.38.0 # Or a specific version you know works
+torch>=2.0.0 # Or a specific version you know works
+# Optional, for quantization with transformers (e.g., 4-bit)
+# bitsandbytes # Uncomment if you use BitsAndBytesConfig in local_llm_connector.py
+# accelerate # Often needed with transformers, especially for device_map
+
+# Core dependency for GGUF based nodes (e.g., Mistral-7B-Instruct-Q8.gguf)
+llama-cpp-python>=0.1.0 # Or a specific version
+
+# Optional: For downloading models from Hugging Face Hub
+huggingface_hub
+
+# Optional: If your package uses any specific utility libraries
+# (Although deepdiff, pillow, etc. might be pulled in by ComfyUI or other nodes)
+# deepdiff
+# pillow
+
+# Notes for Users:
+# For llama-cpp-python with GPU support (CUDA), installation is more complex.
+# Example for CUDA 11.8 (check llama-cpp-python docs for your version):
+# CMAKE_ARGS="-DLLAMA_CUBLAS=on" pip install llama-cpp-python
+# Example for CUDA 12.1:
+# CMAKE_ARGS="-DLLAMA_CUDA=on" pip install llama-cpp-python

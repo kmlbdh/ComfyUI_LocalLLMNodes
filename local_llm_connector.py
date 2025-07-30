@@ -1,6 +1,7 @@
 # ComfyUI/custom_nodes/ComfyUI_LocalLLMNodes/local_llm_connector.py
 import os
 import folder_paths
+import traceback # Add this import for better error reporting
 
 # --- Simple logging utility for this package ---
 def log(message):
@@ -90,6 +91,7 @@ class SetLocalLLMServiceConnector:
         connector = LocalLLMServiceConnector(model_path)
         return (connector,)
 
+# --- Inside the LocalLLMServiceConnector class ---
 
 class LocalLLMServiceConnector:
     """
@@ -103,6 +105,8 @@ class LocalLLMServiceConnector:
         self.model = None
         self.tokenizer = None
         self.is_loaded = False
+        # Optional: Store loading parameters if passed from the node
+        # self.device = device
 
     def _load_model(self):
         """Loads the model and tokenizer if not already loaded."""
@@ -110,21 +114,22 @@ class LocalLLMServiceConnector:
             return # Already loaded
 
         try:
-            log(f"Loading local LLM model from: {self.model_path}")
+            log(f"[LocalLLMConnector] Loading local LLM model from: {self.model_path}")
             # --- Model Loading Configuration ---
             tokenizer_kwargs = {
                 "trust_remote_code": True # Needed for some non-standard models
             }
-
+            
             # --- Example Quantization Config (Uncomment and use if needed) ---
             # Requires 'bitsandbytes': pip install bitsandbytes
+            # from transformers import BitsAndBytesConfig # Ensure this import is at the top or here
             # quantization_config = BitsAndBytesConfig(
             #     load_in_4bit=True,
             #     bnb_4bit_compute_dtype=torch.float16,
             #     bnb_4bit_use_double_quant=True,
             #     bnb_4bit_quant_type="nf4"
             # )
-
+            
             model_kwargs = {
                 "trust_remote_code": True,
                 # --- Add Quantization Config if using ---
@@ -140,7 +145,7 @@ class LocalLLMServiceConnector:
             # Handle models without a pad token (common with Llama-based models)
             if self.tokenizer.pad_token_id is None:
                 self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
-                log(f"Set pad_token_id to eos_token_id ({self.tokenizer.eos_token_id})")
+                log(f"[LocalLLMConnector] Set pad_token_id to eos_token_id ({self.tokenizer.eos_token_id})")
 
             # --- Load Model ---
             # Note: device_map="auto" is often crucial here, especially with quantization
@@ -153,12 +158,18 @@ class LocalLLMServiceConnector:
             #     self.model.to("cpu")
 
             self.is_loaded = True
-            log(f"Local LLM model loaded successfully from: {self.model_path}")
+            log(f"[LocalLLMConnector] Local LLM model loaded successfully from: {self.model_path}")
         except Exception as e:
-            error_msg = f"Failed to load local LLM model from {self.model_path}: {e}"
+            # --- Improved Error Reporting for Loading ---
+            error_msg = f"[LocalLLMConnector] Failed to load local LLM model from {self.model_path}"
             log(error_msg)
-            # Re-raise to stop execution if loading fails
-            raise Exception(error_msg) from e # Chain the exception
+            # Print the full traceback to the console for detailed debugging
+            log(f"[LocalLLMConnector] Traceback:\n{traceback.format_exc()}")
+            # --- End of Improved Error Reporting ---
+
+            # Re-raise the original exception to halt the node execution
+            # Using 'from e' preserves the original exception chain (though traceback.format_exc shows it)
+            raise e # Or: raise Exception(error_msg) from e
 
     def invoke(self, messages, **generation_kwargs):
         """
@@ -169,12 +180,16 @@ class LocalLLMServiceConnector:
         :param generation_kwargs: Additional arguments for text generation (e.g., max_new_tokens, temperature, seed).
         :return: The generated text string.
         """
+        # --- Log input for debugging (optional) ---
+        # log(f"[LocalLLMConnector] invoke called with messages: {messages}")
+        # log(f"[LocalLLMConnector] invoke called with generation_kwargs: {generation_kwargs}")
+
         try:
             if not self.is_loaded:
                 self._load_model() # Load model on first invocation
 
             if not self.model or not self.tokenizer:
-                raise Exception("Local LLM model or tokenizer failed to load.")
+                raise Exception("[LocalLLMConnector] Local LLM model or tokenizer failed to load.")
 
             # --- Format messages for the local model ---
             # Try using the tokenizer's chat template if available (more robust)
@@ -187,7 +202,7 @@ class LocalLLMServiceConnector:
                      raise ValueError("apply_chat_template did not return a string")
             except Exception as e:
                 # Fallback to simple formatting if chat template fails or isn't available
-                log(f"Falling back to simple prompt formatting: {e}")
+                log(f"[LocalLLMConnector] Falling back to simple prompt formatting: {e}")
                 prompt_parts = []
                 for message in messages:
                     role = message.get('role', 'user')
@@ -201,48 +216,75 @@ class LocalLLMServiceConnector:
                      prompt = "Assistant:" # Fallback if messages were empty
 
             if not prompt.strip():
-                 log("Warning: Generated prompt is empty or whitespace.")
+                 log("[LocalLLMConnector] Warning: Generated prompt is empty or whitespace.")
                  return "" # Return empty string if prompt is empty
 
             # --- Tokenize the prompt ---
             try:
                 inputs = self.tokenizer(prompt, return_tensors="pt")
-                # Consider moving inputs to model's device if not using device_map="auto"
-                # if hasattr(self.model, 'device') and self.model.device.type != 'meta':
-                #     inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+                # --- FIX 1: Move inputs to the model's device ---
+                # Check if the model has a device attribute and move inputs accordingly.
+                # This is essential when the model is on GPU (cuda) but inputs are on CPU.
+                if hasattr(self.model, 'device') and self.model.device is not None:
+                    # Move each tensor in the inputs dictionary to the model's device
+                    inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
+                # Note: If device_map="auto" places different parts on different devices,
+                # this simple approach might need refinement, but it works for common cases
+                # where the main model components are on a single device (like cuda:0).
+
             except Exception as e:
-                 error_msg = f"Error tokenizing prompt: {e}"
+                 error_msg = f"[LocalLLMConnector] Error tokenizing prompt or moving to device: {e}"
                  log(error_msg)
                  raise Exception(error_msg) from e
 
             # --- Set default generation parameters ---
             # These defaults should be reasonable for prompt generation tasks
             default_kwargs = {
-                "max_new_tokens": 250, # Slightly higher default for complex prompts
-                "temperature": 0.7,    # Default creativity
+                "max_new_tokens": 350, # Slightly higher default for complex prompts
+                "temperature": 0.6,    # Default creativity
                 "do_sample": True,     # Enable sampling for variety
+                "top_p": 0.9,          # Nucleus sampling
+                "repetition_penalty": 1.1,    # Slight penalty (1.05-1.2) to discourage repeating words/phrases
+                "length_penalty": 0.8,        # Slightly penalize shorter sequences (if supported, encourages longer output)
+                # "min_new_tokens": 50,       # Optional: Force a minimum output length (if supported)
                 "pad_token_id": self.tokenizer.pad_token_id if self.tokenizer.pad_token_id is not None else self.tokenizer.eos_token_id,
                 # "eos_token_id": self.tokenizer.eos_token_id, # Optional: explicitly set EOS
             }
+
+            # --- FIX 2: Filter kwargs and handle 'seed' ---
             # Update defaults with any provided kwargs (e.g., from consuming nodes)
-            # Filter out kwargs that might cause issues if not explicitly supported
-            filtered_kwargs = {k: v for k, v in generation_kwargs.items() if k in ['max_new_tokens', 'temperature', 'top_p', 'top_k', 'do_sample', 'num_beams', 'early_stopping', 'pad_token_id', 'eos_token_id', 'seed']}
-            # Handle 'seed' if passed - PyTorch manual seed (affects stochastic operations)
-            if 'seed' in generation_kwargs and generation_kwargs['seed'] is not None:
+            # Filter out kwargs that might cause issues or are handled separately.
+            # Commonly accepted kwargs for transformers.generate (add/remove based on your models if needed)
+            accepted_kwargs = [
+                'max_new_tokens', 'min_new_tokens', 'max_length', 'min_length',
+                'do_sample', 'temperature', 'top_k', 'top_p', 'typical_p',
+                'repetition_penalty', 'length_penalty', 'no_repeat_ngram_size',
+                'encoder_no_repeat_ngram_size', 'bad_words_ids', 'force_words_ids',
+                'num_beams', 'num_beam_groups', 'penalty_alpha', 'use_cache',
+                'output_attentions', 'output_hidden_states', 'return_dict_in_generate',
+                'pad_token_id', 'bos_token_id', 'eos_token_id', 'exponential_decay_length_penalty'
+                # Note: 'seed' is intentionally omitted as it's not a standard generate() kwarg
+            ]
+            filtered_kwargs = {k: v for k, v in generation_kwargs.items() if k in accepted_kwargs}
+
+            # Handle 'seed' if passed - Set PyTorch manual seed (affects stochastic operations)
+            # This must be done BEFORE calling model.generate()
+            if generation_kwargs.get('seed') is not None: # Use .get() for safer access
                 try:
                     torch.manual_seed(generation_kwargs['seed'])
+                    # Optionally log if needed: log(f"[LocalLLMConnector] Set torch manual seed to {generation_kwargs['seed']}")
                 except Exception as e:
-                    log(f"Warning: Could not set seed: {e}")
+                    log(f"[LocalLLMConnector] Warning: Could not set seed: {e}")
 
-            default_kwargs.update(filtered_kwargs)
+            default_kwargs.update(filtered_kwargs) # Now only contains valid generate() kwargs
 
             # --- Generate text ---
             try:
                 self.model.eval()
                 with torch.no_grad():
-                    outputs = self.model.generate(**inputs, **default_kwargs)
+                    outputs = self.model.generate(**inputs, **default_kwargs) # Should now work without device/seed errors
             except Exception as e:
-                 error_msg = f"Error during model.generate: {e}"
+                 error_msg = f"[LocalLLMConnector] Error during model.generate: {e}"
                  log(error_msg)
                  raise Exception(error_msg) from e
 
@@ -253,16 +295,17 @@ class LocalLLMServiceConnector:
                 generated_text = self.tokenizer.decode(generated_tokens[0], skip_special_tokens=True)
                 # Ensure the output is a clean string
                 final_text = generated_text.strip()
+                # log(f"[LocalLLMConnector] Generated text (first 100 chars): {final_text[:100]}...")
                 return final_text # <-- Return ONLY the generated string
 
             except Exception as e:
-                 error_msg = f"Error decoding generated tokens: {e}"
+                 error_msg = f"[LocalLLMConnector] Error decoding generated tokens: {e}"
                  log(error_msg)
                  raise Exception(error_msg) from e
 
         except Exception as e:
             # Catch any error that occurred within the try block and log it
-            error_msg = f"Error in invoke method: {str(e)}"
+            error_msg = f"[LocalLLMConnector] Error in invoke method: {str(e)}"
             log(error_msg)
-            # Re-raise the exception so the calling node knows it failed
+            # Re-raise the exception so the calling node (e.g., KontextPromptGenerator) knows it failed
             raise e # Or raise Exception(error_msg) from e

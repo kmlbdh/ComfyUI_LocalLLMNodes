@@ -15,21 +15,87 @@ script_directory = os.path.dirname(os.path.abspath(__file__))
 USER_PRESETS_FILE = os.path.join(script_directory, "user_kontext_presets.json")
 
 # --- Replicate Built-in Presets (from MieNodes' prompt_generator.py) ---
-# Ensure these match the original structure exactly.
 KONTEXT_PRESETS = {
-    "Kontext Standard": {
-        "system": "You are an expert AI assistant specializing in generating detailed, creative prompts for image generation models. Your task is to take user-provided image descriptions and edit instructions, then synthesize them into a single, highly descriptive prompt optimized for image generation. Focus on integrating key visual elements like character features, clothing details, scene setting, lighting, and artistic style. Ensure the final prompt is concise, avoids redundancy, and clearly conveys the user's intent for the desired image output."
+    "Kid Clothes -> Flux Prompt": {
+        "system": (
+            "You are an expert prompt generator for Flux Kontext. Your task is to place clothing described by the user onto a baby or child with Arab facial features, while preserving all material, color, and style details from the original clothing description. "
+            "Input: "
+            "1. [IMAGE DESC]: A clean and specific description of a piece of baby or children’s clothing. "
+            "2. [USER INTENT]: Typically vague, like 'put on baby' or 'make it worn'. "
+            "Rules: "
+            "Output only a single Flux prompt (no extra labels, quotes, or explanation). "
+            "Always apply the clothes on a realistic Arab baby or toddler (chubby cheeks, warm skin tone, soft features, natural lighting). "
+            "Retain all textures, cuts, stitching, patterns, and colors of the clothing exactly. "
+            "Set the baby in a realistic environment: white blanket, nursery, soft studio setting. "
+            "Describe lighting: soft diffused lighting, warm tones, shallow depth of field. "
+            "Use fashion product photography terms and camera specs. "
+            "Example: "
+            "[IMAGE DESC]: A pale blue cotton baby romper with white cloud patterns, soft buttons and footies. "
+            "[USER INTENT]: put it on a baby "
+            "Output: "
+            "A photorealistic Arab baby with round cheeks and light tan skin, lying on a soft white fleece blanket, wearing a pale blue cotton romper with stitched white cloud patterns and integrated footies, captured in soft natural lighting with shallow DOF, cozy nursery ambiance, 8K resolution, cinematic baby fashion catalog style."
+        )
     },
-    "Kontext Detailed": {
-        "system": "You are a master prompt engineer for AI image generators. Your role is to meticulously craft prompts by deeply analyzing user inputs. Given descriptions of two images (e.g., a person and clothing) and specific edit instructions, you must seamlessly merge these elements. Prioritize descriptive keywords for physical attributes, textures, colors, background environments, and artistic influences. The resulting prompt should be rich in detail, logically structured, and highly effective at guiding the image generator to produce the envisioned scene with high fidelity."
+    "Women’s Clothes -> Flux Prompt": {
+        "system": (
+            "You are an expert visual prompt composer for Flux Kontext. Your job is to place the clothing described by the user onto a realistic Muslim woman model in her 20s with Arab features, while preserving all original garment details. "
+            "Input: "
+            "1. [IMAGE DESC]: A detailed visual description of a clothing item (e.g., abaya, blouse, scarf). "
+            "2. [USER INTENT]: Often short, like 'make her wear it' or 'put on a model'. "
+            "Rules: "
+            "Output a single photorealistic prompt. "
+            "Always depict a modest Arab Muslim woman, 20s, wearing the clothes naturally and confidently. "
+            "Keep all design details: fabric texture, color, embroidery, shape. "
+            "Style should reflect high-end modest fashion or Islamic wear catalog. "
+            "Scene: outdoor urban, soft studio light, clean modern backdrop, or lifestyle setting. "
+            "Describe lighting, pose, camera angle, clothing drape and body fit. "
+            "Example: "
+            "[IMAGE DESC]: A beige linen abaya with gold-stitched cuffs and a waist tie. "
+            "[USER INTENT]: put it on muslim woman "
+            "Output: "
+            "A young Arab Muslim woman in her 20s with soft olive skin and delicate features, wearing a beige linen abaya with subtle gold-stitched cuffs and a loosely tied waist sash, standing in a minimalist white studio under soft diffused lighting, side-facing pose with natural folds in the fabric, fashion editorial style with cinematic shallow DOF."
+        )
     },
-    "Kontext Minimalist": {
-        "system": "You are an AI assistant focused on creating concise, clear prompts for image generation. Your task is to distill user-provided descriptions and edit instructions into a short, essential prompt. Identify the core subject, key action or interaction, and the most important visual style or setting. Eliminate unnecessary details and focus on the primary elements that define the scene. The output prompt should be direct and easy for the image generator to interpret accurately."
+    "Beauty Product Use -> Flux Prompt": {
+        "system": (
+            "You are a creative image prompt generator for Flux Kontext focused on health, skincare, and beauty products. Your job is to place the described product in an artistic or commercial setting — either used by a model (Arab man or woman), or placed within a creative, beauty-inspired scene — while preserving all visual and material details of the product. "
+            "Input: "
+            "1. [IMAGE DESC]: A detailed image or design of a product (e.g., oil bottle, cream jar, serum tube). "
+            "2. [USER INTENT]: Usually vague like 'make woman use it' or 'put it in beautiful place'. "
+            "Rules: "
+            "Output a single detailed visual prompt. "
+            "Product must appear clearly: keep all branding, color, bottle design intact. "
+            "If used: describe the Arab model using it naturally (e.g., applying to face, holding dropper). "
+            "If placed: build a beautiful, creative background — spa setting, nature elements, mirror, floral. "
+            "Use keywords: soft light, high-end spa, cinematic DOF, luxury textures, minimalist props. "
+            "Example: "
+            "[IMAGE DESC]: A small amber glass dropper bottle with golden label and black cap. "
+            "[USER INTENT]: woman use it "
+            "Output: "
+            "An elegant Arab woman with natural tan skin and voluminous dark hair, holding an amber glass dropper bottle with a gold label and black cap, delicately applying serum to her cheek in front of a glowing vanity mirror, soft candle-lit ambiance, subtle shadows, cinematic close-up, bokeh background, luxury skincare ad style."
+        )
     },
-    "Kontext Artistic Style Focus": {
-        "system": "You are an AI prompt specialist with an emphasis on artistic style and rendering techniques. Users will provide descriptions of elements and specific edits. Your goal is to construct a prompt that heavily emphasizes the desired artistic style (e.g., 'oil painting', 'cyberpunk', 'watercolor', 'photorealistic'). Integrate the provided subject and scene details, but frame them within the context of the specified artistic approach. Highlight relevant techniques, color palettes, brushwork, or visual effects associated with that style to guide the image generator effectively."
-    }
+    "Beauty Product Display -> Flux Prompt": {
+        "system": (
+            "You are an expert in luxury beauty product visuals for Flux Kontext. Place the described product in a stunning, creative, brand-inspired environment (without any models), using beauty aesthetics and visual storytelling. "
+            "Input: "
+            "1. [IMAGE DESC]: Description of a product container or design (e.g., shampoo bottle, bar soap, lip balm). "
+            "2. [USER INTENT]: Usually vague like 'put it in nature' or 'make it pretty'. "
+            "Rules: "
+            "Output only one final prompt. "
+            "Focus on creative display — natural materials, elegant composition, light play. "
+            "Use props like glass trays, greenery, water droplets, stone, sand, soft cloth. "
+            "Mention reflections, shadows, lighting temperature. "
+            "Product must stand out, sharply rendered. "
+            "Example: "
+            "[IMAGE DESC]: A matte pink soap bar with embossed logo. "
+            "[USER INTENT]: put in creative background "
+            "Output: "
+            "A matte pink soap bar with embossed luxury logo resting on a smooth white marble tray, surrounded by pale rose petals and water droplets, gentle morning light filtering through a frosted glass window, soft shadows, minimalist spa aesthetic, 8K beauty product photography."
+        )
+    },
 }
+# --- End of KONTEXT_PRESETS ---
 
 def load_user_presets():
     """Load user-defined presets from the JSON file."""
@@ -87,44 +153,79 @@ class LocalKontextPromptGenerator(object):
 
     # --- Replicate the core generate_kontext_prompt method exactly ---
     def generate_kontext_prompt(self, llm_service_connector, image1_description, image2_description, edit_instruction, preset, seed=None):
-        """
-        Replicates the exact core logic from KontextPromptGenerator.generate_kontext_prompt.
-        """
-        # --- Exact replication of the original logic ---
-        all_presets = get_all_kontext_presets()
-        preset_data = all_presets.get(preset)
-        # --- Fixed Syntax Error ---
-        if not preset_data: # <-- Corrected condition
-            raise ValueError(f"Unknown preset: {preset}")
+            """
+            Replicates the exact core logic from KontextPromptGenerator.generate_kontext_prompt.
+            """
+            # --- Exact replication of the original logic ---
+            all_presets = get_all_kontext_presets()
+            preset_data = all_presets.get(preset)
+            # --- Fixed Syntax Error ---
+            if not preset_data: # <-- Corrected condition check
+                raise ValueError(f"Unknown preset: {preset}")
+            
+            # --- Refined user content construction for Flux prompt generation ---
+            # --- Refined user content construction for strict interpretation ---
+            def safe_str_convert(value):
+                """Converts input to string, handling lists and None."""
+                if value is None:
+                    return ""
+                if isinstance(value, list):
+                    return " ".join(str(item) for item in value if item is not None)
+                return str(value)
 
-        # 用户输入拼到user消息中，给LLM最大上下文
-        user_content = ""
-        if image1_description.strip():
-            user_content += f"Image 1 (person) description: {image1_description.strip()}"
-        if image2_description.strip():
-            user_content += f"Image 2 (clothing) description: {image2_description.strip()}"
-        if edit_instruction.strip():
-            user_content += f"Edit instruction: {edit_instruction.strip()}"
-        if not user_content.strip():
-            user_content = "No additional image description or edit instruction provided."
+            # Get and convert inputs
+            raw_img1_desc = image1_description
+            # raw_img2_desc = image2_description # Explicitly ignored for now
+            raw_edit_inst = edit_instruction
 
-        messages = [
-            {"role": "system", "content": preset_data["system"]},
-            {"role": "user", "content": user_content},
-        ]
+            img1_desc_str = safe_str_convert(raw_img1_desc).strip()
+            # img2_desc_str = safe_str_convert(raw_img2_desc).strip() # Ignored
+            edit_inst_str = safe_str_convert(raw_edit_inst).strip()
 
-        # --- Key Change: Use the local connector's invoke method ---
-        # Pass the messages and seed.
-        try:
-            kontext_prompt = llm_service_connector.invoke(messages, seed=seed)
-            # Ensure the output is stripped, like the original
-            return (kontext_prompt.strip(),)
-        except Exception as e:
-            # Handle potential errors during local LLM invocation
-            error_msg = f"Error generating kontext prompt with local LLM: {str(e)}"
-            log(error_msg) # Log to console
-            # Return the error message as the prompt string so the workflow doesn't crash silently
-            return (error_msg,)
+            # --- Key Change: Sharper distinction and labeling ---
+            # Construct user_content with very clear, labeled sections
+            user_content_parts = []
+
+            if img1_desc_str:
+                # Present the base description as the subject/context
+                user_content_parts.append(f"IMAGE 1 DESCRIPTION: {img1_desc_str}")
+                # user_content_parts.append(f"[SUBJECT]: {img1_desc_str}")
+
+            if edit_inst_str:
+                # Directly frame edits as Flux adjustments
+                user_content_parts.append(f"FLUX EDIT INSTRUCTION: {edit_inst_str}")
+            else:
+                # Default to a Flux-style improvement request
+                user_content_parts.append("FLUX EDIT INSTRUCTION: Enhance details and realism.")
+
+            # Combine parts
+            user_content = " ".join(user_content_parts) # Simple space separator
+
+            # Fallback if somehow inputs were empty
+            if not user_content.strip():
+                    user_content = "IMAGE 1 DESCRIPTION: A product on a white background. FLUX EDIT INSTRUCTION: Make it photorealistic."
+
+            # --- End of Refined user content construction ---
+
+            # Rest of the method remains the same...
+            messages = [
+                {"role": "system", "content": preset_data["system"]},
+                {"role": "user", "content": user_content},
+            ]
+
+            # --- Key Change: Use the local connector's invoke method ---
+            # Pass the messages and seed.
+            try:
+                kontext_prompt = llm_service_connector.invoke(messages, seed=seed)
+                # Ensure the output is stripped, like the original
+                return (kontext_prompt.strip(),)
+            except Exception as e:
+                # Handle potential errors during local LLM invocation
+                error_msg = f"Error generating kontext prompt with local LLM: {str(e)}"
+                log(error_msg) # Log to console (using the 'log' function defined in this file)
+                # Return the error message as the prompt string so the workflow doesn't crash silently
+                return (error_msg,)
+
 
     # --- Replicate the is_changed method for proper caching ---
     def is_changed(self, llm_service_connector, image1_description, image2_description, edit_instruction, preset, seed):

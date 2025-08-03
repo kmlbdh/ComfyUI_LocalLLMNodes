@@ -67,10 +67,10 @@ if LOCAL_LLM_NODES_AVAILABLE:
         "RemoveUserLocalKontextPreset": RemoveUserLocalKontextPreset,
     })
     NODE_DISPLAY_NAME_MAPPINGS.update({
-        "SetLocalLLMServiceConnector": "Set Local LLM Service Connector 🐑 (HuggingFace)",
-        "LocalKontextPromptGenerator": "Local Kontext Prompt Generator 🐑",
-        "AddUserLocalKontextPreset": "Add User Local Kontext Preset 🐑",
-        "RemoveUserLocalKontextPreset": "Remove User Local Kontext Preset 🐑",
+        "SetLocalLLMServiceConnector": "Set Local LLM Service Connector (HuggingFace)",
+        "LocalKontextPromptGenerator": "Local Kontext Prompt Generator",
+        "AddUserLocalKontextPreset": "Add User Local Kontext Preset",
+        "RemoveUserLocalKontextPreset": "Remove User Local Kontext Preset",
     })
 
 # Add GGUF based nodes if available
@@ -79,7 +79,7 @@ if LOCAL_GGUF_NODES_AVAILABLE:
         "SetLocalGGUFLLMServiceConnector": SetLocalGGUFLLMServiceConnector,
     })
     NODE_DISPLAY_NAME_MAPPINGS.update({
-        "SetLocalGGUFLLMServiceConnector": "Set Local GGUF LLM Service Connector 🐑",
+        "SetLocalGGUFLLMServiceConnector": "Set Local GGUF LLM Service Connector",
     })
 
 # --- Define what ComfyUI sees ---

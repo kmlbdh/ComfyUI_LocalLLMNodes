@@ -1,5 +1,5 @@
 [project]
-name = "localLLMnodes"
+name = "Local LLM Nodes"
 description = "Run local LLMs in ComfyUI and generate Flux Kontext.dev prompts from simple English descriptions"
 readme = "README.md"
 version = "0.1.0"
@@ -15,6 +15,7 @@ classifiers = [
 ]
 
 [project.urls]
+Repository = "https://github.com/kmlbdh/ComfyUI_LocalLLMNodes"
 Homepage = "https://github.com/kmlbdh/ComfyUI_LocalLLMNodes"
 
 [tool.comfy]

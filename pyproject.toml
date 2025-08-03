@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "comfyui-localllmnodes"
+description = "Run local LLMs in ComfyUI and generate Flux Kontext.dev prompts from simple English descriptions"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.8"
+authors = [
+    { name = "Your Name", email = "your.email@example.com" }
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Repository = "https://github.com/kmlbdh/ComfyUI_LocalLLMNodes"
+Homepage = "https://github.com/kmlbdh/ComfyUI_LocalLLMNodes"
+
+[tool.comfy]
+node_name = "Local LLM Nodes"
+version = "0.1.0"
+publisher = "kmlbdh"  # 👈 This is your Publisher ID (usually your GitHub username)
+icon = "🤖"  # Optional: pick an emoji icon
+category = "llm"  # Optional: helps organize in the registry (e.g., "generation", "utils", "llm")

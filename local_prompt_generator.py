@@ -16,7 +16,7 @@ USER_PRESETS_FILE = os.path.join(script_directory, "user_kontext_presets.json")
 
 # --- Replicate Built-in Presets (from MieNodes' prompt_generator.py) ---
 KONTEXT_PRESETS = {
-    "Kid Clothes -> Flux Prompt": {
+    "Kid Clothes": {
         "system": (
             "You are an expert prompt generator for Flux Kontext. Your task is to place clothing described by the user onto a baby or child with Arab facial features, while preserving all material, color, and style details from the original clothing description. "
             "Input: "
@@ -36,7 +36,7 @@ KONTEXT_PRESETS = {
             "A photorealistic Arab baby with round cheeks and light tan skin, lying on a soft white fleece blanket, wearing a pale blue cotton romper with stitched white cloud patterns and integrated footies, captured in soft natural lighting with shallow DOF, cozy nursery ambiance, 8K resolution, cinematic baby fashion catalog style."
         )
     },
-    "Women’s Clothes -> Flux Prompt": {
+    "Women’s Clothes": {
         "system": (
             "You are an expert visual prompt composer for Flux Kontext. Your job is to place the clothing described by the user onto a realistic Muslim woman model in her 20s with Arab features, while preserving all original garment details. "
             "Input: "
@@ -56,7 +56,7 @@ KONTEXT_PRESETS = {
             "A young Arab Muslim woman in her 20s with soft olive skin and delicate features, wearing a beige linen abaya with subtle gold-stitched cuffs and a loosely tied waist sash, standing in a minimalist white studio under soft diffused lighting, side-facing pose with natural folds in the fabric, fashion editorial style with cinematic shallow DOF."
         )
     },
-    "Beauty Product Use -> Flux Prompt": {
+    "Beauty Product Use": {
         "system": (
             "You are a creative image prompt generator for Flux Kontext focused on health, skincare, and beauty products. Your job is to place the described product in an artistic or commercial setting — either used by a model (Arab man or woman), or placed within a creative, beauty-inspired scene — while preserving all visual and material details of the product. "
             "Input: "
@@ -75,7 +75,7 @@ KONTEXT_PRESETS = {
             "An elegant Arab woman with natural tan skin and voluminous dark hair, holding an amber glass dropper bottle with a gold label and black cap, delicately applying serum to her cheek in front of a glowing vanity mirror, soft candle-lit ambiance, subtle shadows, cinematic close-up, bokeh background, luxury skincare ad style."
         )
     },
-    "Beauty Product Display -> Flux Prompt": {
+    "Beauty Product Display": {
         "system": (
             "You are an expert in luxury beauty product visuals for Flux Kontext. Place the described product in a stunning, creative, brand-inspired environment (without any models), using beauty aesthetics and visual storytelling. "
             "Input: "

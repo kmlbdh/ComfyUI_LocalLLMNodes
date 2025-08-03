@@ -1,6 +1,6 @@
 # ComfyUI_LocalLLMNodes
 
-A custom node pack for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) to run Large Language Models (LLMs) locally for prompt generation and text tasks within ComfyUI workflows.
+A custom node pack for [ComfyUI](https://github.com/comfyanonymous/ComfyUI) to run Large Language Models (LLMs) locally for flux kontext dev prompt generation within ComfyUI workflows.
 
 **Purpose:**
 This pack is designed to simplify the creation of detailed, high-quality prompts for advanced image generation models like **Flux Kontext Dev**. It achieves this by using a **locally running LLM** (Large Language Model) to process:

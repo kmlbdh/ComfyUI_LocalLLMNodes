@@ -1,5 +1,5 @@
 [project]
-name = "Local LLM Nodes"
+name = "LocalLLMnodes"
 description = "Run local LLMs in ComfyUI and generate Flux Kontext.dev prompts from simple English descriptions"
 readme = "README.md"
 version = "0.1.0"

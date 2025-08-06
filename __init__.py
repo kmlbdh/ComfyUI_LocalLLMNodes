@@ -55,6 +55,8 @@ if GGUF_DEPS_AVAILABLE:
 else:
     print("[ComfyUI_LocalLLMNodes] GGUF LLM Connector node will NOT be available due to missing dependency (llama-cpp-python).")
 
+from .arabic_product_node import ArabicProductDescriptionGenerator
+
 # --- Define Mappings ---
 # Populate the dictionaries based on which nodes were successfully imported.
 
@@ -65,12 +67,14 @@ if LOCAL_LLM_NODES_AVAILABLE:
         "LocalKontextPromptGenerator": LocalKontextPromptGenerator,
         "AddUserLocalKontextPreset": AddUserLocalKontextPreset,
         "RemoveUserLocalKontextPreset": RemoveUserLocalKontextPreset,
+        "ArabicProductDescriptionGenerator": ArabicProductDescriptionGenerator,
     })
     NODE_DISPLAY_NAME_MAPPINGS.update({
         "SetLocalLLMServiceConnector": "Set Local LLM Service Connector (HuggingFace)",
         "LocalKontextPromptGenerator": "Local Kontext Prompt Generator",
         "AddUserLocalKontextPreset": "Add User Local Kontext Preset",
         "RemoveUserLocalKontextPreset": "Remove User Local Kontext Preset",
+        "ArabicProductDescriptionGenerator": "Arabic Product Description Generator"
     })
 
 # Add GGUF based nodes if available

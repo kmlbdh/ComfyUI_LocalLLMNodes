@@ -73,9 +73,6 @@ class SetLocalGGUFLLMServiceConnector:
                     "step": 1,
                     "display": "slider"
                 }),
-                # --- Optional: Expose other common parameters ---
-                # "n_threads": ("INT", {"default": 8, "min": 1, "max": 64}),
-                # "n_ctx": ("INT", {"default": 4096, "min": 1, "max": 32768}), # Max depends on model
             },
         }
 
@@ -179,12 +176,17 @@ class LocalGGUFLLMServiceConnector:
             if generation_kwargs is None:
                 generation_kwargs = {}
 
-            # Filter out unsupported keywords for ctransformers, like 'seed'
-            # This is the key fix to prevent the error
-            gen_kwargs = {
-                k: v for k, v in generation_kwargs.items() if k != 'seed'
+            # List of supported keywords for ctransformers generation
+            supported_keywords = [
+                'temperature', 'max_new_tokens', 'repetition_penalty',
+                'top_p', 'stop', 'top_k'
+            ]
+            
+            # Filter out unsupported keywords
+            final_gen_kwargs = {
+                k: v for k, v in generation_kwargs.items() if k in supported_keywords
             }
-
+            
             # ctransformers does not have a native create_chat_completion method.
             # We must format the messages list into a single prompt string.
             prompt_parts = []
@@ -200,15 +202,17 @@ class LocalGGUFLLMServiceConnector:
             
             full_prompt = "\n\n".join(prompt_parts) + "\n\n### Assistant:\n"
             
-            final_gen_kwargs = {
-                'temperature': gen_kwargs.get('temperature', 0.7),
-                'max_new_tokens': gen_kwargs.get('max_new_tokens', 256),
-                'repetition_penalty': gen_kwargs.get('repetition_penalty', 1.1),
-                'top_p': gen_kwargs.get('top_p', 0.9),
-                'stop': gen_kwargs.get('stop', []),
-            }
-
-            generated_text = self.model(full_prompt, **final_gen_kwargs)
+            # Use sensible defaults for missing parameters
+            final_gen_kwargs['temperature'] = final_gen_kwargs.get('temperature', 0.7)
+            final_gen_kwargs['max_new_tokens'] = final_gen_kwargs.get('max_new_tokens', 256)
+            final_gen_kwargs['repetition_penalty'] = final_gen_kwargs.get('repetition_penalty', 1.1)
+            final_gen_kwargs['top_p'] = final_gen_kwargs.get('top_p', 0.9)
+            
+            # The model function in ctransformers might not accept 'stop' as a keyword argument
+            # Let's handle it separately and pass it if it's available
+            stop_sequences = final_gen_kwargs.pop('stop', [])
+            
+            generated_text = self.model(full_prompt, **final_gen_kwargs, stop=stop_sequences)
             
             return generated_text.strip() if generated_text else ""
 

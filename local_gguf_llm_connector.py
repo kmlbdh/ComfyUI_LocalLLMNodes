@@ -176,6 +176,9 @@ class LocalGGUFLLMServiceConnector:
             if generation_kwargs is None:
                 generation_kwargs = {}
 
+            # *** هذا هو التغيير الرئيسي: إزالة وسيط 'seed' بشكل صريح ومباشر ***
+            generation_kwargs.pop('seed', None)
+
             # List of supported keywords for ctransformers generation
             supported_keywords = [
                 'temperature', 'max_new_tokens', 'repetition_penalty',

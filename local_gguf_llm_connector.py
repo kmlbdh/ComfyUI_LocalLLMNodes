@@ -174,6 +174,16 @@ class LocalGGUFLLMServiceConnector:
 
             if not self.model:
                 raise Exception("[LocalGGUFLLMConnector] Local GGUF LLM model failed to load.")
+            
+            # Make sure generation_kwargs is a dictionary
+            if generation_kwargs is None:
+                generation_kwargs = {}
+
+            # Filter out unsupported keywords for ctransformers, like 'seed'
+            # This is the key fix to prevent the error
+            gen_kwargs = {
+                k: v for k, v in generation_kwargs.items() if k != 'seed'
+            }
 
             # ctransformers does not have a native create_chat_completion method.
             # We must format the messages list into a single prompt string.
@@ -190,15 +200,15 @@ class LocalGGUFLLMServiceConnector:
             
             full_prompt = "\n\n".join(prompt_parts) + "\n\n### Assistant:\n"
             
-            gen_kwargs = {
-                'temperature': generation_kwargs.get('temperature', 0.7),
-                'max_new_tokens': generation_kwargs.get('max_new_tokens', 256),
-                'repetition_penalty': generation_kwargs.get('repeat_penalty', 1.1),
-                'top_p': generation_kwargs.get('top_p', 0.9),
-                'stop': generation_kwargs.get('stop', []),
+            final_gen_kwargs = {
+                'temperature': gen_kwargs.get('temperature', 0.7),
+                'max_new_tokens': gen_kwargs.get('max_new_tokens', 256),
+                'repetition_penalty': gen_kwargs.get('repetition_penalty', 1.1),
+                'top_p': gen_kwargs.get('top_p', 0.9),
+                'stop': gen_kwargs.get('stop', []),
             }
 
-            generated_text = self.model(full_prompt, **gen_kwargs)
+            generated_text = self.model(full_prompt, **final_gen_kwargs)
             
             return generated_text.strip() if generated_text else ""
 

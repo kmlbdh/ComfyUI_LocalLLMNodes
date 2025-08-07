@@ -1,24 +1,31 @@
 # ComfyUI/custom_nodes/ComfyUI_LocalLLMNodes/local_gguf_llm_connector.py
 import os
 import folder_paths
+import subprocess
+import sys
+
 # --- Library for GGUF local LLM inference ---
+# We're now using ctransformers instead of llama_cpp
 try:
-    import llama_cpp
-    # import llama_cpp.llama_tokenizer # Optional, remove if not used
-    LLAMA_CPP_AVAILABLE = True
+    from ctransformers import AutoModelForCausalLM
+    CTRANSFORMERS_AVAILABLE = True
 except ImportError:
-    # --- Simple logging utility for this package (reuse existing one) ---
-    # Import here to avoid potential issues if log isn't defined yet if imported at top in case of circular import risks,
-    # though usually safe. Ensure local_llm_connector.py defines 'log' early.
     from .local_llm_connector import log
-    log("[LocalGGUFLLMConnector] Warning: llama-cpp-python library not found.")
-    LLAMA_CPP_AVAILABLE = False
-    llama_cpp = None
+    log("[LocalGGUFLLMConnector] Warning: ctransformers library not found. Attempting auto-install...")
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "ctransformers"])
+        from ctransformers import AutoModelForCausalLM
+        CTRANSFORMERS_AVAILABLE = True
+        log("[LocalGGUFLLMConnector] ctransformers installed successfully.")
+    except Exception as e:
+        log(f"[LocalGGUFLLMConnector] Failed to install ctransformers. Please install it manually: pip install ctransformers. Error: {e}")
+        CTRANSFORMERS_AVAILABLE = False
+        AutoModelForCausalLM = None
 
 # Reuse the logging function from local_llm_connector
-from .local_llm_connector import log # Ensure this is the final import for log
+from .local_llm_connector import log
 
-LOCAL_LLM_CATEGORY = "Local LLM Nodes/LLM Connectors" # Reuse or define new sub-category like "Local LLM Nodes/GGUF Connectors"
+LOCAL_LLM_CATEGORY = "Local LLM Nodes/LLM Connectors"
 
 def get_local_gguf_model_names():
     """Discovers .gguf files or directories containing .gguf files within models/LLM."""
@@ -37,7 +44,7 @@ def get_local_gguf_model_names():
                      for subitem in os.listdir(item_path):
                          if subitem.endswith('.gguf'):
                              model_names.append(item)
-                             break # Found one, add the directory name and move to next item
+                             break
         except Exception as e:
             log(f"[LocalGGUFLLMConnector] Error scanning models/LLM directory: {e}")
     else:
@@ -50,8 +57,7 @@ def get_local_gguf_model_names():
 class SetLocalGGUFLLMServiceConnector:
     """
     A node to select and prepare a connection to a local GGUF LLM model.
-    Models should be placed in ComfyUI/models/LLM/your_model.gguf or ComfyUI/models/LLM/your_model_folder/your_model.gguf.
-    Requires 'llama-cpp-python': pip install llama-cpp-python (consider CUDA flags for GPU support)
+    Now uses the ctransformers library.
     """
     @classmethod
     def INPUT_TYPES(cls):
@@ -59,13 +65,11 @@ class SetLocalGGUFLLMServiceConnector:
         return {
             "required": {
                 "local_gguf_model_name": (model_names, {"default": model_names[0] if model_names else "No_Local_GGUF_Models_Found"}),
-                # --- Add device selection dropdown ---
-                "device": (["GPU", "CPU"], {"default": "GPU"}), # Default to GPU
-                # --- n_gpu_layers slider ---
+                "device": (["GPU", "CPU"], {"default": "GPU"}),
                 "n_gpu_layers": ("INT", {
-                    "default": -1, # This default will be overridden based on 'device'
-                    "min": -1, # -1 for 'all possible'
-                    "max": 100, # Adjust based on typical model layer counts if needed
+                    "default": -1,
+                    "min": -1,
+                    "max": 100,
                     "step": 1,
                     "display": "slider"
                 }),
@@ -75,21 +79,19 @@ class SetLocalGGUFLLMServiceConnector:
             },
         }
 
-    RETURN_TYPES = ("LLMServiceConnector",) # Use the same type for compatibility
+    RETURN_TYPES = ("LLMServiceConnector",)
     FUNCTION = "get_connector"
-    CATEGORY = LOCAL_LLM_CATEGORY # Should be defined earlier, e.g., "Local LLM Nodes/LLM Connectors"
+    CATEGORY = LOCAL_LLM_CATEGORY
     OUTPUT_NODE = False
 
-    # --- Update get_connector to accept 'device' and set n_gpu_layers default dynamically ---
-    def get_connector(self, local_gguf_model_name, device, n_gpu_layers): # , n_threads=8, n_ctx=4096): # Add other params if exposed
+    def get_connector(self, local_gguf_model_name, device, n_gpu_layers):
         """Returns a connector object for the selected GGUF model."""
-        if not LLAMA_CPP_AVAILABLE:
-            raise Exception("The 'llama-cpp-python' library is required for the Local GGUF LLM node but is not installed.")
+        if not CTRANSFORMERS_AVAILABLE:
+            raise Exception("The 'ctransformers' library is required for the Local GGUF LLM node but is not installed.")
 
         if local_gguf_model_name == "No_Local_GGUF_Models_Found":
              raise Exception("No local GGUF models found in models/LLM directory. Please place your .gguf files there.")
 
-        # Determine the full path to the .gguf file
         base_models_dir = os.path.join(folder_paths.models_dir, "LLM")
         model_path = os.path.join(base_models_dir, local_gguf_model_name)
 
@@ -97,7 +99,6 @@ class SetLocalGGUFLLMServiceConnector:
         if os.path.isfile(model_path) and model_path.endswith('.gguf'):
             gguf_file_path = model_path
         elif os.path.isdir(model_path):
-            # Search for .gguf file inside the directory
             for file in os.listdir(model_path):
                 if file.endswith('.gguf'):
                     gguf_file_path = os.path.join(model_path, file)
@@ -106,111 +107,102 @@ class SetLocalGGUFLLMServiceConnector:
         if not gguf_file_path or not os.path.exists(gguf_file_path):
              raise FileNotFoundError(f"[LocalGGUFLLMConnector] GGUF model file not found for selection: {local_gguf_model_name}")
 
-        # --- Key Change: Set n_gpu_layers default based on device selection ---
-        # Determine the final n_gpu_layers value to pass to the connector
         final_n_gpu_layers = n_gpu_layers
-
-        # Apply default logic based on device and slider state
-        # If device is CPU and n_gpu_layers is the slider's default (-1), assume user wants CPU mode
         if device == "CPU" and n_gpu_layers == -1:
             final_n_gpu_layers = 0
             log(f"[LocalGGUFLLMConnector] Device set to CPU, overriding n_gpu_layers to 0.")
-        # If device is GPU and n_gpu_layers is the slider's default (-1), keep -1 for max offload
         elif device == "GPU" and n_gpu_layers == -1:
             final_n_gpu_layers = -1
             log(f"[LocalGGUFLLMConnector] Device set to GPU, keeping n_gpu_layers=-1 (max offload).")
         else:
-            # If user explicitly set n_gpu_layers (slider moved), respect that value regardless of device dropdown
             log(f"[LocalGGUFLLMConnector] Using user-provided n_gpu_layers={n_gpu_layers} (device={device}).")
-        # --- End of Key Change ---
 
-        # --- Pass the potentially adjusted n_gpu_layers (and others if exposed) to the connector ---
         connector = LocalGGUFLLMServiceConnector(
             gguf_file_path,
             n_gpu_layers=final_n_gpu_layers
-            # n_threads=n_threads, # Pass if exposed
-            # n_ctx=n_ctx # Pass if exposed
         )
-        # --- End of Passing Parameters ---
         return (connector,)
 
 
 class LocalGGUFLLMServiceConnector:
     """
-    Represents the connection to a specific local GGUF LLM using llama-cpp-python.
+    Represents the connection to a specific local GGUF LLM using ctransformers.
     The `gguf_file_path` should point directly to the .gguf file.
     """
-    # --- Update __init__ to accept and store parameters ---
-    def __init__(self, gguf_file_path, n_gpu_layers=-1): # , n_ctx=4096, n_threads=8):
+    def __init__(self, gguf_file_path, n_gpu_layers=-1):
         self.gguf_file_path = gguf_file_path
-        self.n_gpu_layers = n_gpu_layers # Store n_gpu_layers
-        # self.n_ctx = n_ctx # Store n_ctx if exposed
-        # self.n_threads = n_threads # Store n_threads if exposed
+        self.n_gpu_layers = n_gpu_layers
         self.model = None
         self.is_loaded = False
-    # --- End of Update ---
 
     def _load_model(self):
-        """Loads the GGUF model using llama-cpp-python."""
+        """Loads the GGUF model using ctransformers."""
         if self.is_loaded:
-            return # Already loaded
+            return
+
+        if not CTRANSFORMERS_AVAILABLE:
+            raise Exception("The 'ctransformers' library is not available.")
 
         try:
             log(f"[LocalGGUFLLMConnector] Loading GGUF model from: {self.gguf_file_path}")
-            # --- Model Loading Configuration for llama-cpp-python ---
-            # Use the parameters passed from the node
             model_kwargs = {
-                "n_ctx": getattr(self, 'n_ctx', 4096), # Use default if not passed/store, or just hardcode if not exposed
-                "n_threads": getattr(self, 'n_threads', 8), # Use default if not passed/store, or just hardcode if not exposed
-                # --- Key Change: Add n_gpu_layers ---
-                "n_gpu_layers": self.n_gpu_layers, # Use the value set by the user/node (default adjusted by SetLocalGGUFLLMServiceConnector)
-                # --- Optional: Adjust verbosity ---
-                # "verbose": False, # Set to False to reduce llama.cpp logging if needed
+                # We need to extract the model file name from the full path
+                "model_file": os.path.basename(self.gguf_file_path),
+                # The path to the directory containing the model file
+                "model_path": os.path.dirname(self.gguf_file_path),
+                "model_type": "llama", # Assuming a Llama-like format
+                "gpu_layers": self.n_gpu_layers,
+                # Optional: configure other parameters here if needed
+                "verbose": True
             }
-            # --- End of Key Change ---
-
-            # --- Load Model ---
-            # Crucially, pass the full path to the .gguf file and the kwargs
-            self.model = llama_cpp.Llama(model_path=self.gguf_file_path, **model_kwargs)
-
+            self.model = AutoModelForCausalLM.from_pretrained(**model_kwargs)
             self.is_loaded = True
             log(f"[LocalGGUFLLMConnector] GGUF model loaded successfully.")
         except Exception as e:
             error_msg = f"[LocalGGUFLLMConnector] Failed to load GGUF model: {e}"
             log(error_msg)
-            raise Exception(error_msg) from e # Chain the exception
+            raise Exception(error_msg) from e
 
-    # ... (rest of the class: invoke method remains largely the same) ...
-    def invoke(self, messages, **generation_kwargs):
+    def invoke(self, messages: list, generation_kwargs: dict = None) -> str:
         """
         Generates text using the local GGUF LLM based on the messages list.
-        :param messages: List of message dictionaries (like OpenAI format).
-                         Example: [{"role": "system", "content": "You are a helpful assistant."}, {"role": "user", "content": "Hello!"}]
-        :param generation_kwargs: Additional arguments for text generation (e.g., max_tokens, temperature).
-        :return: The generated text string.
+        This method formats the messages into a single prompt string suitable for ctransformers.
         """
         try:
             if not self.is_loaded:
-                self._load_model() # Load model on first invocation
+                self._load_model()
 
             if not self.model:
                 raise Exception("[LocalGGUFLLMConnector] Local GGUF LLM model failed to load.")
 
-            # Filter kwargs for llama-cpp-python chat completion
-            chat_kwargs = {
-                k: v for k, v in generation_kwargs.items()
-                if k in ['temperature', 'top_p', 'top_k', 'max_tokens', 'presence_penalty', 'frequency_penalty', 'repeat_penalty', 'seed']
+            # ctransformers does not have a native create_chat_completion method.
+            # We must format the messages list into a single prompt string.
+            prompt_parts = []
+            for message in messages:
+                role = message.get('role', 'user')
+                content = message.get('content', '')
+                if role == "system":
+                    prompt_parts.append(f"### System:\n{content}")
+                elif role == "user":
+                    prompt_parts.append(f"### User:\n{content}")
+                elif role == "assistant":
+                    prompt_parts.append(f"### Assistant:\n{content}")
+            
+            full_prompt = "\n\n".join(prompt_parts) + "\n\n### Assistant:\n"
+            
+            gen_kwargs = {
+                'temperature': generation_kwargs.get('temperature', 0.7),
+                'max_new_tokens': generation_kwargs.get('max_new_tokens', 256),
+                'repetition_penalty': generation_kwargs.get('repeat_penalty', 1.1),
+                'top_p': generation_kwargs.get('top_p', 0.9),
+                'stop': generation_kwargs.get('stop', []),
             }
-            if 'max_new_tokens' in generation_kwargs and 'max_tokens' not in chat_kwargs:
-                chat_kwargs['max_tokens'] = generation_kwargs['max_new_tokens']
 
-            response = self.model.create_chat_completion(messages=messages, **chat_kwargs)
-            generated_text = response['choices'][0]['message']['content']
+            generated_text = self.model(full_prompt, **gen_kwargs)
+            
             return generated_text.strip() if generated_text else ""
 
         except Exception as e:
             error_msg = f"[LocalGGUFLLMConnector] Error in invoke method: {str(e)}"
             log(error_msg)
-            raise e # Re-raise
-
-# ... (rest of the file) ...
+            raise e

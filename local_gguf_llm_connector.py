@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import platform
+import folder_paths
 
 try:
     import llama_cpp
